@@ -1,0 +1,91 @@
+import numpy as np
+
+def parallel_cellular_resource_allocation_simple(grid_size=(5, 5), total_resource=1000, iterations=30, alpha=0.3):
+    """
+    Resource Allocation using Parallel Cellular Algorithm (PCA)
+    Displays resource grid in a simple table format and shows the best solution.
+    """
+
+    rows, cols = grid_size
+    num_cells = rows * cols
+
+    # Initialize grid with random resource values
+    resources = np.random.rand(rows, cols)
+    resources = (resources / np.sum(resources)) * total_resource
+
+    print(f"\nInitial Total Resources: {np.sum(resources):.2f}")
+
+    # Iterate updates
+    for _ in range(iterations):
+        new_resources = resources.copy()
+
+        for i in range(rows):
+            for j in range(cols):
+                # 8-neighbor average (toroidal grid)
+                neighbors = []
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        if dx == 0 and dy == 0:
+                            continue
+                        ni, nj = (i + dx) % rows, (j + dy) % cols
+                        neighbors.append(resources[ni, nj])
+
+                avg_neighbor = np.mean(neighbors)
+                new_resources[i, j] = (1 - alpha) * resources[i, j] + alpha * avg_neighbor
+
+        # Keep total resource constant
+        new_resources = (new_resources / np.sum(new_resources)) * total_resource
+        resources = new_resources
+
+    print(f"Final Total Resources: {np.sum(resources):.2f}")
+
+    # Find best (max) cell
+    best_value = np.max(resources)
+    best_pos = np.unravel_index(np.argmax(resources), resources.shape)
+
+    # Display grid neatly
+    print("\nFinal Resource Allocation Grid (in units):\n")
+    for i in range(rows):
+        for j in range(cols):
+            val = resources[i, j]
+            if (i, j) == best_pos:
+                print(f"[{val:6.2f}*]", end="  ")  # mark best cell with *
+            else:
+                print(f"{val:8.2f}", end="  ")
+        print()  # new line per row
+
+    print(f"\n✅ Best Cell: {best_pos} with Resource = {best_value:.2f}\n")
+
+    return resources, best_pos, best_value
+
+
+# Example usage
+if __name__ == "__main__":
+    grid, best_pos, best_val = parallel_cellular_resource_allocation_simple(
+        grid_size=(10, 10),
+        total_resource=500,
+        iterations=30,
+        alpha=0.3
+    )
+
+
+
+''' output:
+Initial Total Resources: 500.00
+Final Total Resources: 500.00
+
+Final Resource Allocation Grid (in units):
+
+    4.81      4.79      4.83      4.90      4.98      5.04      5.06      5.02      4.95      4.87  
+    4.78      4.79      4.85      4.94      5.01      5.05      5.04      4.99      4.90      4.83  
+    4.82      4.84      4.90      4.98      5.04      5.06      5.04      4.98      4.91      4.85  
+    4.89      4.91      4.95      5.01      5.06      5.07      5.06      5.02      4.97      4.92  
+    4.99      4.97      4.99      5.01      5.04      5.07      5.09      5.08      5.05      5.02  
+    5.06      5.02      4.99      4.99      5.02      5.07      5.12      5.15      5.14      5.11  
+    5.09      5.02      4.97      4.96      5.00      5.07      5.14      5.19  [  5.20*]      5.16  
+    5.06      4.99      4.94      4.93      4.98      5.06      5.14      5.19      5.19      5.14  
+    4.99      4.92      4.89      4.91      4.97      5.05      5.12      5.15      5.13      5.06  
+    4.88      4.84      4.85      4.90      4.97      5.04      5.09      5.09      5.04      4.96  
+
+✅ Best Cell: (6, 8) with Resource = 5.20
+'''
